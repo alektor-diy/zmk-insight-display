@@ -13,6 +13,9 @@ menuconfig ZMK_INSIGHT_DISPLAY
 
 if ZMK_INSIGHT_DISPLAY
 
+config HEAP_MEM_POOL_SIZE
+    default 1024 if ZMK_DISPLAY
+
 config ZMK_INSIGHT_DISPLAY_SYNC_VERSION
     int
     default 1
