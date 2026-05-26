@@ -35,6 +35,7 @@ static int apply_remote_state(const void *data, uint16_t length) {
     struct zmk_insight_display_state next;
     memcpy(&next, data, sizeof(next));
     next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_SYNCED;
+    zmk_insight_display_set_runtime_ready(true);
     zmk_insight_display_state_set(&next);
     return 0;
 }
@@ -145,6 +146,7 @@ static void clear_sync(void) {
     memset(&read_params, 0, sizeof(read_params));
     service_end_handle = 0;
     subscribed = false;
+    zmk_insight_display_set_runtime_ready(false);
     zmk_insight_display_sync_mark_unsynced();
 }
 
@@ -206,6 +208,7 @@ void zmk_insight_display_sync_mark_unsynced(void) {
 
 static int zmk_insight_display_peripheral_sync_init(void) {
     bt_conn_cb_register(&conn_callbacks);
+    zmk_insight_display_set_runtime_ready(false);
     zmk_insight_display_sync_mark_unsynced();
     return 0;
 }

@@ -95,17 +95,18 @@ static void render_state_to_display(const struct zmk_insight_display_state *stat
     char top[24];
     char battery[24];
 
-    const bool representative_ready =
-        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U &&
-        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_OUTPUT_VALID) != 0U &&
-        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_BLE_VALID) != 0U;
+    const bool representative_ready = zmk_insight_display_runtime_ready();
 
     if (!representative_ready) {
         snprintf(top, sizeof(top), "INITIALIZING...");
         snprintf(battery, sizeof(battery), "PLEASE WAIT");
     } else {
         format_top_row(top, sizeof(top), state);
-        format_battery_row(battery, sizeof(battery), state);
+        if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
+            snprintf(battery, sizeof(battery), "USB POWER");
+        } else {
+            format_battery_row(battery, sizeof(battery), state);
+        }
     }
 
     cfb_framebuffer_clear(display_dev, false);

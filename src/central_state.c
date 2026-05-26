@@ -80,6 +80,7 @@ static int publish_state(void) {
 
 static void delayed_publish_handler(struct k_work *work) {
     ARG_UNUSED(work);
+    zmk_insight_display_set_runtime_ready(true);
     (void)publish_state();
 }
 
@@ -103,6 +104,7 @@ ZMK_SUBSCRIPTION(zmk_insight_display_central, zmk_layer_state_changed);
 ZMK_SUBSCRIPTION(zmk_insight_display_central, zmk_usb_conn_state_changed);
 
 static int zmk_insight_display_central_init(void) {
+    zmk_insight_display_set_runtime_ready(false);
     k_work_init_delayable(&delayed_publish_work, delayed_publish_handler);
     (void)publish_state();
     (void)k_work_schedule(&delayed_publish_work, K_SECONDS(3));
