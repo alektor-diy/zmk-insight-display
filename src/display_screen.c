@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include <lvgl.h>
-#include <widgets/lv_label.h>
 #include <zephyr/sys/slist.h>
 #include <zephyr/sys/util.h>
 
@@ -11,6 +10,14 @@
 #include <zmk_insight_display/config.h>
 #include <zmk_insight_display/events/state_changed.h>
 #include <zmk_insight_display/state.h>
+
+/* ZMK v0.3.x's bundled LVGL setup links label support, but the public
+ * umbrella headers used during module builds do not always expose the
+ * prototypes consistently. Declare the small subset we use here so calls
+ * are type-correct and don't rely on implicit declarations.
+ */
+lv_obj_t *lv_label_create(lv_obj_t *parent);
+void lv_label_set_text(lv_obj_t *obj, const char *text);
 
 struct zmk_insight_display_widget {
     sys_snode_t node;
