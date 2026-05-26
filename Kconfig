@@ -10,9 +10,6 @@ menuconfig ZMK_INSIGHT_DISPLAY
 
 if ZMK_INSIGHT_DISPLAY
 
-config ZMK_DISPLAY_STATUS_SCREEN_CUSTOM
-    default y if ZMK_DISPLAY
-
 config ZMK_INSIGHT_DISPLAY_SYNC_VERSION
     int
     default 1

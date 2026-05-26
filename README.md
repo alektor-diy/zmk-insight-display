@@ -40,6 +40,12 @@ Display rules:
 ## Module Setup
 
 Add this repository to `west.yml`, then add `CONFIG_ZMK_INSIGHT_DISPLAY=y` to the firmware config that should use the module.
+Also select the custom ZMK display status screen:
+
+```conf
+CONFIG_ZMK_INSIGHT_DISPLAY=y
+CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM=y
+```
 
 Example `west.yml` entry:
 
@@ -170,6 +176,13 @@ manifest:
 ```
 
 その上で、`ZMK_EXTRA_MODULES` 経由または config repository の workflow 経由で module を build に含めます。
+
+あわせて、ZMK の display status screen を custom に切り替えてください。
+
+```conf
+CONFIG_ZMK_INSIGHT_DISPLAY=y
+CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM=y
+```
 
 ## 必須 overlay ノード
 
