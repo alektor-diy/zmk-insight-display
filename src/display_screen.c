@@ -18,6 +18,8 @@
  */
 lv_obj_t *lv_label_create(lv_obj_t *parent);
 void lv_label_set_text(lv_obj_t *obj, const char *text);
+lv_obj_t *lv_obj_create(lv_obj_t *parent, const lv_obj_t *copy);
+void lv_obj_set_pos(lv_obj_t *obj, lv_coord_t x, lv_coord_t y);
 
 struct zmk_insight_display_widget {
     sys_snode_t node;
@@ -121,15 +123,15 @@ ZMK_SUBSCRIPTION(zmk_insight_display_widget_listener, zmk_insight_display_state_
 
 static void init_widget(struct zmk_insight_display_widget *widget, lv_obj_t *parent) {
     widget->root = parent;
-    widget->top_row = lv_label_create(parent);
-    widget->battery_row = lv_label_create(parent);
+    widget->top_row = lv_label_create(parent, NULL);
+    widget->battery_row = lv_label_create(parent, NULL);
 
-    lv_obj_align(widget->top_row, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_set_pos(widget->top_row, 0, 0);
 
     if (zmk_insight_display_layout_kind() == ZMK_INSIGHT_DISPLAY_LAYOUT_128X64) {
-        lv_obj_align(widget->battery_row, LV_ALIGN_TOP_LEFT, 0, 24);
+        lv_obj_set_pos(widget->battery_row, 0, 24);
     } else {
-        lv_obj_align(widget->battery_row, LV_ALIGN_TOP_LEFT, 0, 16);
+        lv_obj_set_pos(widget->battery_row, 0, 16);
     }
 
     sys_slist_append(&widgets, &widget->node);
@@ -140,10 +142,7 @@ static void init_widget(struct zmk_insight_display_widget *widget, lv_obj_t *par
 lv_obj_t *zmk_display_status_screen() {
     static struct zmk_insight_display_widget widget;
 
-    lv_obj_t *screen = lv_obj_create(NULL);
-    lv_obj_set_size(screen, 128,
-                    zmk_insight_display_layout_kind() == ZMK_INSIGHT_DISPLAY_LAYOUT_128X64 ? 64
-                                                                                           : 32);
+    lv_obj_t *screen = lv_obj_create(NULL, NULL);
     init_widget(&widget, screen);
     return screen;
 }
