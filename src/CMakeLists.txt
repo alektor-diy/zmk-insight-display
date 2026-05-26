@@ -1,6 +1,7 @@
 target_sources(app PRIVATE
   state.c
   config.c
+  local_battery.c
   events/state_changed.c
 )
 

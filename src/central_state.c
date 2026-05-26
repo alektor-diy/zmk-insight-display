@@ -4,7 +4,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include <zmk/battery.h>
 #include <zmk/ble.h>
 #include <zmk/endpoints.h>
 #include <zmk/event_manager.h>
@@ -64,7 +63,7 @@ static struct zmk_insight_display_state build_state(void) {
                          : ZMK_INSIGHT_DISPLAY_BLE_STATE_ADVERTISING,
     };
 
-    assign_battery_pair(&state, zmk_battery_state_of_charge(), last_remote_battery,
+    assign_battery_pair(&state, zmk_insight_display_local_battery_percent(), last_remote_battery,
                         remote_battery_valid);
 
     return state;

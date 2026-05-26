@@ -7,7 +7,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
-#include <zmk/battery.h>
 #include <zmk_insight_display/config.h>
 #include <zmk_insight_display/private.h>
 #include <zmk_insight_display/state.h>
@@ -193,11 +192,11 @@ void zmk_insight_display_sync_mark_unsynced(void) {
                     ZMK_INSIGHT_DISPLAY_FLAG_BLE_VALID | ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID);
 
     if (zmk_insight_display_local_side() == ZMK_INSIGHT_DISPLAY_SIDE_LEFT) {
-        next.left_battery = zmk_battery_state_of_charge();
+        next.left_battery = zmk_insight_display_local_battery_percent();
         next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
         next.flags &= ~ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
     } else {
-        next.right_battery = zmk_battery_state_of_charge();
+        next.right_battery = zmk_insight_display_local_battery_percent();
         next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
         next.flags &= ~ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
     }
