@@ -95,8 +95,18 @@ static void render_state_to_display(const struct zmk_insight_display_state *stat
     char top[24];
     char battery[24];
 
-    format_top_row(top, sizeof(top), state);
-    format_battery_row(battery, sizeof(battery), state);
+    const bool representative_ready =
+        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U &&
+        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_OUTPUT_VALID) != 0U &&
+        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_BLE_VALID) != 0U;
+
+    if (!representative_ready) {
+        snprintf(top, sizeof(top), "INITIALIZING...");
+        snprintf(battery, sizeof(battery), "PLEASE WAIT");
+    } else {
+        format_top_row(top, sizeof(top), state);
+        format_battery_row(battery, sizeof(battery), state);
+    }
 
     cfb_framebuffer_clear(display_dev, false);
     (void)cfb_print(display_dev, top, 0, 0);
