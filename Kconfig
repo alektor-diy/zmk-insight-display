@@ -4,7 +4,7 @@ menuconfig ZMK_INSIGHT_DISPLAY
     select BT_GATT_CLIENT if !ZMK_SPLIT_ROLE_CENTRAL
     select BT_GATT_AUTO_DISCOVER_CCC if !ZMK_SPLIT_ROLE_CENTRAL
     select ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING if ZMK_SPLIT_ROLE_CENTRAL
-    select LVGL_USE_LABEL if ZMK_DISPLAY
+    select LV_USE_LABEL if ZMK_DISPLAY
     help
       Synchronize split-wide status for OLED displays, including support for
       displays attached only to the split peripheral side.
