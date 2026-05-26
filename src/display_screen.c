@@ -16,7 +16,7 @@
  * prototypes consistently. Declare the small subset we use here so calls
  * are type-correct and don't rely on implicit declarations.
  */
-lv_obj_t *lv_label_create(lv_obj_t *parent, const lv_obj_t *copy);
+lv_obj_t *lv_label_create(lv_obj_t *parent);
 void lv_label_set_text(lv_obj_t *obj, const char *text);
 
 struct zmk_insight_display_widget {
@@ -121,8 +121,8 @@ ZMK_SUBSCRIPTION(zmk_insight_display_widget_listener, zmk_insight_display_state_
 
 static void init_widget(struct zmk_insight_display_widget *widget, lv_obj_t *parent) {
     widget->root = parent;
-    widget->top_row = lv_label_create(parent, NULL);
-    widget->battery_row = lv_label_create(parent, NULL);
+    widget->top_row = lv_label_create(parent);
+    widget->battery_row = lv_label_create(parent);
 
     lv_obj_set_pos(widget->top_row, 0, 0);
 
