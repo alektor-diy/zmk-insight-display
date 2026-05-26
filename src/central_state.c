@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include <zephyr/init.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 #include <zmk/battery.h>
@@ -26,6 +27,7 @@ BUILD_ASSERT(CONFIG_ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS == 1,
 
 static uint8_t last_remote_battery;
 static bool remote_battery_valid;
+static struct k_work_delayable periodic_publish_work;
 
 static void assign_battery_pair(struct zmk_insight_display_state *state, uint8_t local_battery,
                                 uint8_t remote_battery, bool remote_valid) {
@@ -77,6 +79,12 @@ static int publish_state(void) {
     return 0;
 }
 
+static void periodic_publish_handler(struct k_work *work) {
+    ARG_UNUSED(work);
+    (void)publish_state();
+    (void)k_work_schedule(&periodic_publish_work, K_SECONDS(2));
+}
+
 static int insight_display_central_listener(const zmk_event_t *eh) {
     const struct zmk_peripheral_battery_state_changed *peripheral_battery =
         as_zmk_peripheral_battery_state_changed(eh);
@@ -96,6 +104,11 @@ ZMK_SUBSCRIPTION(zmk_insight_display_central, zmk_ble_active_profile_changed);
 ZMK_SUBSCRIPTION(zmk_insight_display_central, zmk_layer_state_changed);
 ZMK_SUBSCRIPTION(zmk_insight_display_central, zmk_usb_conn_state_changed);
 
-static int zmk_insight_display_central_init(void) { return publish_state(); }
+static int zmk_insight_display_central_init(void) {
+    k_work_init_delayable(&periodic_publish_work, periodic_publish_handler);
+    (void)publish_state();
+    (void)k_work_schedule(&periodic_publish_work, K_SECONDS(2));
+    return 0;
+}
 
 SYS_INIT(zmk_insight_display_central_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
