@@ -101,8 +101,9 @@ static void render_state_to_display(const struct zmk_insight_display_state *stat
         snprintf(top, sizeof(top), "INITIALIZING...");
         snprintf(battery, sizeof(battery), "PLEASE WAIT");
     } else {
+        const bool local_battery_valid = zmk_insight_display_local_battery_valid();
         format_top_row(top, sizeof(top), state);
-        if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
+        if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB && !local_battery_valid) {
             snprintf(battery, sizeof(battery), "USB POWER");
         } else {
             format_battery_row(battery, sizeof(battery), state);
@@ -158,6 +159,9 @@ static int zmk_insight_display_display_init(void) {
         (void)cfb_framebuffer_set_font(display_dev, 0);
     }
 
+    (void)cfb_framebuffer_clear(display_dev, true);
+    (void)cfb_framebuffer_finalize(display_dev);
+    k_msleep(40);
     (void)cfb_framebuffer_clear(display_dev, true);
     (void)display_blanking_off(display_dev);
 

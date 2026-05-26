@@ -195,11 +195,19 @@ void zmk_insight_display_sync_mark_unsynced(void) {
 
     if (zmk_insight_display_local_side() == ZMK_INSIGHT_DISPLAY_SIDE_LEFT) {
         next.left_battery = zmk_insight_display_local_battery_percent();
-        next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
+        if (zmk_insight_display_local_battery_valid()) {
+            next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
+        } else {
+            next.flags &= ~ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
+        }
         next.flags &= ~ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
     } else {
         next.right_battery = zmk_insight_display_local_battery_percent();
-        next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
+        if (zmk_insight_display_local_battery_valid()) {
+            next.flags |= ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
+        } else {
+            next.flags &= ~ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
+        }
         next.flags &= ~ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
     }
 

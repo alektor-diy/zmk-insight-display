@@ -29,10 +29,12 @@ static bool remote_battery_valid;
 static struct k_work_delayable delayed_publish_work;
 
 static void assign_battery_pair(struct zmk_insight_display_state *state, uint8_t local_battery,
-                                uint8_t remote_battery, bool remote_valid) {
+                                bool local_valid, uint8_t remote_battery, bool remote_valid) {
     if (zmk_insight_display_local_side() == ZMK_INSIGHT_DISPLAY_SIDE_LEFT) {
         state->left_battery = local_battery;
-        state->flags |= ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
+        if (local_valid) {
+            state->flags |= ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID;
+        }
 
         state->right_battery = remote_battery;
         if (remote_valid) {
@@ -40,7 +42,9 @@ static void assign_battery_pair(struct zmk_insight_display_state *state, uint8_t
         }
     } else {
         state->right_battery = local_battery;
-        state->flags |= ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
+        if (local_valid) {
+            state->flags |= ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID;
+        }
 
         state->left_battery = remote_battery;
         if (remote_valid) {
@@ -63,7 +67,8 @@ static struct zmk_insight_display_state build_state(void) {
                          : ZMK_INSIGHT_DISPLAY_BLE_STATE_ADVERTISING,
     };
 
-    assign_battery_pair(&state, zmk_insight_display_local_battery_percent(), last_remote_battery,
+    assign_battery_pair(&state, zmk_insight_display_local_battery_percent(),
+                        zmk_insight_display_local_battery_valid(), last_remote_battery,
                         remote_battery_valid);
 
     return state;
