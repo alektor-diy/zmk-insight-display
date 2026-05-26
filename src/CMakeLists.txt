@@ -17,6 +17,7 @@ endif()
 
 if(CONFIG_ZMK_DISPLAY)
   target_sources(app PRIVATE
+    display_cfb.c
     display_screen.c
   )
 endif()
