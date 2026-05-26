@@ -1,0 +1,9 @@
+/ {
+    insight_display: insight_display {
+        compatible = "zmk,insight-display";
+        side = "left";
+        display = <&oled>;
+        layout = "128x32";
+        screen-mode = "single";
+    };
+};

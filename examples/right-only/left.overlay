@@ -1,0 +1,6 @@
+/ {
+    insight_display: insight_display {
+        compatible = "zmk,insight-display";
+        side = "left";
+    };
+};

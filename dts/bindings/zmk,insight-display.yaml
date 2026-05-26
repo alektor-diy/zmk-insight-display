@@ -1,0 +1,37 @@
+description: ZMK Insight display configuration
+
+compatible: "zmk,insight-display"
+
+properties:
+  side:
+    type: string
+    required: true
+    enum:
+      - left
+      - right
+    description: Physical side for this firmware image.
+
+  display:
+    type: phandle
+    required: false
+    description: Optional local display device used by this half.
+
+  layout:
+    type: string
+    required: false
+    default: "128x32"
+    enum:
+      - 128x32
+      - 128x64
+    description: Layout template used when a local display is present.
+
+  screen-mode:
+    type: string
+    required: false
+    default: "single"
+    enum:
+      - single
+      - paired
+    description: >
+      single shows both left and right battery values on one screen.
+      paired shows only the local side battery value.
