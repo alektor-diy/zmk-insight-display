@@ -134,12 +134,17 @@ static void init_widget(struct zmk_insight_display_widget *widget, lv_obj_t *par
 
     sys_slist_append(&widgets, &widget->node);
     zmk_insight_display_widget_listener_init();
+    zmk_insight_display_widget_listener_refresh_state();
+    render_widget(widget, zmk_insight_display_state_ptr());
 }
 
 lv_obj_t *zmk_display_status_screen() {
     static struct zmk_insight_display_widget widget;
 
     lv_obj_t *screen = lv_obj_create(NULL);
+    lv_obj_set_size(screen, 128,
+                    zmk_insight_display_layout_kind() == ZMK_INSIGHT_DISPLAY_LAYOUT_128X64 ? 64
+                                                                                           : 32);
     init_widget(&widget, screen);
     return screen;
 }
