@@ -134,7 +134,6 @@ static void init_widget(struct zmk_insight_display_widget *widget, lv_obj_t *par
 
     sys_slist_append(&widgets, &widget->node);
     zmk_insight_display_widget_listener_init();
-    zmk_insight_display_widget_listener_refresh_state();
     render_widget(widget, zmk_insight_display_state_ptr());
 }
 
