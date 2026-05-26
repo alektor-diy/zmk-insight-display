@@ -20,6 +20,7 @@ static const struct device *display_dev;
 static bool display_ready;
 static uint8_t font_height = 8;
 
+static struct k_work_delayable startup_work;
 static struct k_work_delayable render_work;
 
 static const char *output_token(const struct zmk_insight_display_state *state) {
@@ -125,6 +126,43 @@ static void render_work_handler(struct k_work *work) {
     (void)k_work_schedule(&render_work, K_MSEC(1000));
 }
 
+static void startup_work_handler(struct k_work *work) {
+    uint8_t font_width;
+
+    ARG_UNUSED(work);
+
+    if (display_dev == NULL || !device_is_ready(display_dev)) {
+        return;
+    }
+
+    if (display_set_pixel_format(display_dev, PIXEL_FORMAT_MONO10) != 0 &&
+        display_set_pixel_format(display_dev, PIXEL_FORMAT_MONO01) != 0) {
+        return;
+    }
+
+    if (cfb_framebuffer_init(display_dev) != 0) {
+        return;
+    }
+
+    if (cfb_get_font_size(display_dev, 0, &font_width, &font_height) != 0) {
+        font_height = 8;
+    } else {
+        (void)cfb_framebuffer_set_font(display_dev, 0);
+    }
+
+    (void)cfb_framebuffer_clear(display_dev, true);
+    (void)cfb_framebuffer_finalize(display_dev);
+    k_msleep(20);
+    (void)cfb_framebuffer_clear(display_dev, true);
+    (void)cfb_framebuffer_finalize(display_dev);
+    k_msleep(20);
+    (void)display_blanking_off(display_dev);
+
+    display_ready = true;
+    render_state_to_display(zmk_insight_display_state_ptr());
+    (void)k_work_schedule(&render_work, K_MSEC(250));
+}
+
 static int display_listener(const zmk_event_t *eh) {
     ARG_UNUSED(eh);
     if (display_ready) {
@@ -137,12 +175,14 @@ ZMK_LISTENER(zmk_insight_display_display, display_listener);
 ZMK_SUBSCRIPTION(zmk_insight_display_display, zmk_insight_display_state_changed);
 
 static int zmk_insight_display_display_init(void) {
-    uint8_t font_width;
-
     display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
     if (!device_is_ready(display_dev)) {
         return 0;
     }
+
+    display_ready = false;
+    k_work_init_delayable(&startup_work, startup_work_handler);
+    k_work_init_delayable(&render_work, render_work_handler);
 
     if (display_set_pixel_format(display_dev, PIXEL_FORMAT_MONO10) != 0 &&
         display_set_pixel_format(display_dev, PIXEL_FORMAT_MONO01) != 0) {
@@ -153,24 +193,12 @@ static int zmk_insight_display_display_init(void) {
         return 0;
     }
 
-    if (cfb_get_font_size(display_dev, 0, &font_width, &font_height) != 0) {
-        font_height = 8;
-    } else {
-        (void)cfb_framebuffer_set_font(display_dev, 0);
-    }
-
     (void)cfb_framebuffer_clear(display_dev, true);
     (void)cfb_framebuffer_finalize(display_dev);
-    k_msleep(40);
-    (void)cfb_framebuffer_clear(display_dev, true);
-    (void)display_blanking_off(display_dev);
-
-    display_ready = true;
-    k_work_init_delayable(&render_work, render_work_handler);
-    render_state_to_display(zmk_insight_display_state_ptr());
-    (void)k_work_schedule(&render_work, K_MSEC(250));
+    (void)display_blanking_on(display_dev);
+    (void)k_work_schedule(&startup_work, K_MSEC(120));
 
     return 0;
 }
 
-SYS_INIT(zmk_insight_display_display_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+SYS_INIT(zmk_insight_display_display_init, POST_KERNEL, CONFIG_APPLICATION_INIT_PRIORITY);
