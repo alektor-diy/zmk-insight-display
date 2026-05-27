@@ -47,6 +47,14 @@ CONFIG_ZMK_INSIGHT_DISPLAY=y
 CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM=y
 ```
 
+Optional startup text:
+
+```conf
+CONFIG_ZMK_INSIGHT_DISPLAY_BOOT_TEXT="SYLVATWIN"
+```
+
+If unset, the module shows `INITIALIZING...` before representative state is ready.
+
 Example `west.yml` entry:
 
 ```yaml
@@ -119,6 +127,16 @@ That keeps installation to a module-only workflow while still allowing periphera
 ## Verification Status
 
 This repository was implemented against ZMK `v0.3.x` source structure, but it was not built in a full ZMK workspace from this repository alone.
+
+## 起動時メッセージ
+
+起動時に OLED の中央 1 行へ表示する文字列は、設定ファイルから変更できます。
+
+```conf
+CONFIG_ZMK_INSIGHT_DISPLAY_BOOT_TEXT="SYLVATWIN"
+```
+
+未設定の場合は `INITIALIZING...` が表示されます。
 
 ---
 

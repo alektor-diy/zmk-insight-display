@@ -3,7 +3,6 @@ menuconfig ZMK_INSIGHT_DISPLAY
     depends on ZMK_SPLIT && ZMK_SPLIT_BLE && ZMK_BLE
     select BT_GATT_CLIENT if !ZMK_SPLIT_ROLE_CENTRAL
     select BT_GATT_AUTO_DISCOVER_CCC if !ZMK_SPLIT_ROLE_CENTRAL
-    select CHARACTER_FRAMEBUFFER if ZMK_DISPLAY
     select ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING if ZMK_SPLIT_ROLE_CENTRAL
     select LVGL_USE_LABEL if ZMK_DISPLAY
     select LV_USE_LABEL if ZMK_DISPLAY
@@ -13,8 +12,8 @@ menuconfig ZMK_INSIGHT_DISPLAY
 
 if ZMK_INSIGHT_DISPLAY
 
-config HEAP_MEM_POOL_SIZE
-    default 1024 if ZMK_DISPLAY
+config LV_Z_VDB_SIZE
+    default 32 if ZMK_DISPLAY
 
 config ZMK_INSIGHT_DISPLAY_SYNC_VERSION
     int
@@ -27,5 +26,13 @@ config ZMK_INSIGHT_DISPLAY_MAX_SERVICE_READ
     help
       Internal guard for the sync payload size when a peripheral reads the
       central-side state snapshot.
+
+config ZMK_INSIGHT_DISPLAY_BOOT_TEXT
+    string "Boot text"
+    default "INITIALIZING..."
+    help
+      Text shown centered on the OLED before representative state is ready.
+      Leave the default for a generic startup message, or override it from
+      your config to brand the keyboard.
 
 endif
