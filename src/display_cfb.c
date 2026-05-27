@@ -240,43 +240,102 @@ static void draw_mascot(uint16_t x, uint16_t y) {
     draw_bitmap(x, y, 24U, 16U, (anim_phase & 1U) == 0U ? cat_frame_a : cat_frame_b);
 }
 
+static void draw_centered_text(uint16_t x, uint16_t y, uint16_t width, const char *text) {
+    const size_t len = strlen(text);
+    uint16_t text_width = (uint16_t)(len * font_width);
+    uint16_t text_x = x;
+
+    if (text_width < width) {
+        text_x += (width - text_width) / 2U;
+    }
+
+    (void)cfb_print(display_dev, text, text_x, y);
+}
+
+static void draw_transport_chip_128x32(uint16_t x, uint16_t y,
+                                       const struct zmk_insight_display_state *state) {
+    draw_rect(x, y, 30U, 10U);
+    draw_transport_icon(x + 3U, y + 1U, state);
+    draw_centered_text(x + 11U, y + 1U, 16U, output_label(state));
+}
+
+static void draw_ble_chip_128x32(uint16_t x, uint16_t y,
+                                 const struct zmk_insight_display_state *state) {
+    draw_rect(x, y, 30U, 10U);
+    draw_ble_icon(x + 3U, y + 1U, state);
+    draw_centered_text(x + 11U, y + 1U, 16U, ble_label(state));
+}
+
+static void draw_layer_chip_128x32(uint16_t x, uint16_t y,
+                                   const struct zmk_insight_display_state *state) {
+    char layer[8];
+
+    if ((state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) == 0U) {
+        snprintf(layer, sizeof(layer), "--");
+    } else {
+        snprintf(layer, sizeof(layer), "L%u", state->layer);
+    }
+
+    draw_chip(x, y, layer, true);
+}
+
+static void draw_profile_text_128x32(uint16_t x, uint16_t y,
+                                     const struct zmk_insight_display_state *state) {
+    char profile[12];
+
+    if (state->output != ZMK_INSIGHT_DISPLAY_TRANSPORT_BLE ||
+        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) == 0U) {
+        return;
+    }
+
+    snprintf(profile, sizeof(profile), "P%u", state->profile_index + 1U);
+    (void)cfb_print(display_dev, profile, x, y);
+}
+
+static void draw_battery_split_128x32(const struct zmk_insight_display_state *state, uint16_t x,
+                                      uint16_t y) {
+    const bool left_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID) != 0U;
+    const bool right_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID) != 0U;
+    char left[8];
+    char right[8];
+
+    battery_value_text(left, sizeof(left), state->left_battery, left_valid);
+    battery_value_text(right, sizeof(right), state->right_battery, right_valid);
+
+    (void)cfb_print(display_dev, "L", x, y);
+    draw_battery_icon(x + 9U, y + 1U, 16U, 7U, state->left_battery, left_valid);
+    (void)cfb_print(display_dev, left, x + 29U, y);
+
+    (void)cfb_print(display_dev, "R", x, y + font_height + 1U);
+    draw_battery_icon(x + 9U, y + font_height + 2U, 16U, 7U, state->right_battery, right_valid);
+    (void)cfb_print(display_dev, right, x + 29U, y + font_height + 1U);
+}
+
 static void render_128x32(const struct zmk_insight_display_state *state, bool representative_ready) {
-    uint16_t x = 0U;
-    char profile[8];
     const bool local_battery_valid = zmk_insight_display_local_battery_valid();
 
     if (!representative_ready) {
         draw_chip(0U, 0U, "BOOT", true);
         draw_chip(37U, 0U, "SYNC", false);
-        (void)cfb_print(display_dev, "INITIALIZING", 0U, 14U);
-        draw_mascot(96U, 14U);
+        draw_centered_text(0U, 14U, 86U, "INITIALIZING");
+        draw_mascot(100U, 14U);
         return;
     }
 
-    x += draw_chip(x, 0U, output_label(state), true) + 4U;
-    draw_transport_icon(x - 12U, 1U, state);
-
-    x += draw_chip(x, 0U, ble_label(state), false) + 4U;
-    draw_ble_icon(x - 12U, 1U, state);
-
-    if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_BLE &&
-        (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) != 0U) {
-        snprintf(profile, sizeof(profile), "P%u", state->profile_index + 1U);
-        x += draw_chip(x, 0U, profile, false) + 4U;
-    }
-
-    snprintf(profile, sizeof(profile), "L%u", state->layer);
-    (void)draw_chip(display_width - 22U, 0U, profile, true);
+    draw_transport_chip_128x32(0U, 0U, state);
+    draw_ble_chip_128x32(34U, 0U, state);
+    draw_layer_chip_128x32(98U, 0U, state);
+    draw_profile_text_128x32(83U, 1U, state);
 
     if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB && !local_battery_valid) {
-        draw_usb_power_card(0U, 14U, 82U);
+        draw_usb_power_card(0U, 14U, 86U);
     } else if (zmk_insight_display_screen_mode_kind() == ZMK_INSIGHT_DISPLAY_SCREEN_MODE_PAIRED) {
-        draw_local_battery_card(state, 0U, 14U, 82U);
+        draw_local_battery_card(state, 0U, 14U, 86U);
     } else {
-        draw_battery_pair_compact(state, 0U, 16U);
+        draw_battery_split_128x32(state, 0U, 14U);
     }
 
-    draw_mascot(96U, 14U);
+    draw_mascot(100U, 14U);
 }
 
 static void render_128x64(const struct zmk_insight_display_state *state, bool representative_ready) {
