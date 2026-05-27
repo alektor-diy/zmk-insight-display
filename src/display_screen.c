@@ -3,8 +3,6 @@
 #include <lvgl.h>
 #include <widgets/lv_label.h>
 
-#include <zephyr/kernel.h>
-
 #include <zmk/event_manager.h>
 #include <zmk_insight_display/events/state_changed.h>
 #include <zmk_insight_display/private.h>
@@ -19,7 +17,6 @@ struct insight_display_widgets {
 };
 
 static struct insight_display_widgets widgets;
-static struct k_work_delayable render_work;
 
 static const char *transport_text(const struct zmk_insight_display_state *state) {
     if ((state->flags & ZMK_INSIGHT_DISPLAY_FLAG_OUTPUT_VALID) == 0U) {
@@ -64,16 +61,11 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     lv_obj_invalidate(widgets.screen);
 }
 
-static void render_work_handler(struct k_work *work) {
-    ARG_UNUSED(work);
+static int display_listener(const zmk_event_t *eh) {
+    ARG_UNUSED(eh);
     if (widgets.screen != NULL) {
         refresh_widgets(zmk_insight_display_state_ptr());
     }
-}
-
-static int display_listener(const zmk_event_t *eh) {
-    ARG_UNUSED(eh);
-    (void)k_work_reschedule(&render_work, K_NO_WAIT);
     return 0;
 }
 
@@ -82,11 +74,9 @@ ZMK_SUBSCRIPTION(zmk_insight_display_display, zmk_insight_display_state_changed)
 
 lv_obj_t *zmk_display_status_screen(void) {
     if (widgets.screen != NULL) {
-        (void)k_work_reschedule(&render_work, K_NO_WAIT);
+        refresh_widgets(zmk_insight_display_state_ptr());
         return widgets.screen;
     }
-
-    k_work_init_delayable(&render_work, render_work_handler);
 
     widgets.screen = lv_obj_create(NULL);
     lv_obj_set_size(widgets.screen, 128, 32);
