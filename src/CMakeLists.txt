@@ -4,7 +4,6 @@ target_sources(app PRIVATE
   config.c
   local_battery.c
   events/state_changed.c
-  widgets/battery_status.c
 )
 
 if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
@@ -20,6 +19,7 @@ endif()
 
 if(CONFIG_ZMK_DISPLAY)
   target_sources(app PRIVATE
+    widgets/battery_status.c
     display_screen.c
   )
 endif()

@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <widgets/lv_label.h>
+#include <lvgl.h>
 
 #include <zmk_insight_display/widgets/battery_status.h>
 
