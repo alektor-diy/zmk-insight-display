@@ -13,6 +13,7 @@
 #include <zmk/event_manager.h>
 #include <zmk_insight_display/config.h>
 #include <zmk_insight_display/events/state_changed.h>
+#include <zmk_insight_display/private.h>
 #include <zmk_insight_display/state.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -383,7 +384,7 @@ static int zmk_insight_display_display_init(void) {
     }
 
     display_width = (uint16_t)cfb_get_display_parameter(display_dev, CFB_DISPLAY_WIDTH);
-    display_height = (uint16_t)cfb_get_display_parameter(display_dev, CFB_DISPLAY_HEIGHT);
+    display_height = (uint16_t)cfb_get_display_parameter(display_dev, CFB_DISPLAY_HEIGH);
 
     (void)cfb_framebuffer_clear(display_dev, true);
     (void)cfb_framebuffer_finalize(display_dev);
