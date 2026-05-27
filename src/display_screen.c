@@ -14,14 +14,12 @@ struct insight_display_widgets {
     lv_obj_t *line1;
     lv_obj_t *line2;
     lv_timer_t *refresh_timer;
-    lv_timer_t *boot_timer;
     char line1_text[24];
     char line2_text[24];
 };
 
 static struct insight_display_widgets widgets;
 static volatile bool refresh_pending = true;
-static bool boot_phase_blackout = true;
 static bool last_runtime_ready;
 static struct zmk_insight_display_state last_rendered_state;
 
@@ -54,12 +52,9 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     const bool profile_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) != 0U;
     const bool layer_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U;
 
-    if (boot_phase_blackout) {
-        snprintf(widgets.line1_text, sizeof(widgets.line1_text), "");
-        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "");
-    } else if (!zmk_insight_display_runtime_ready()) {
-        snprintf(widgets.line1_text, sizeof(widgets.line1_text), "INITIALIZING");
-        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "PLEASE WAIT");
+    if (!zmk_insight_display_runtime_ready()) {
+        snprintf(widgets.line1_text, sizeof(widgets.line1_text), "--");
+        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "--");
     } else {
         if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
             snprintf(widgets.line1_text, sizeof(widgets.line1_text), "USB %s",
@@ -90,12 +85,6 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     lv_label_set_text(widgets.line1, widgets.line1_text);
     lv_label_set_text(widgets.line2, widgets.line2_text);
     lv_obj_invalidate(widgets.screen);
-}
-
-static void boot_timer_cb(lv_timer_t *timer) {
-    ARG_UNUSED(timer);
-    boot_phase_blackout = false;
-    refresh_pending = true;
 }
 
 static void refresh_timer_cb(lv_timer_t *timer) {
@@ -160,10 +149,7 @@ lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_set_style_border_width(widgets.line2, 0, 0);
 
     widgets.refresh_timer = lv_timer_create(refresh_timer_cb, 33, NULL);
-    widgets.boot_timer = lv_timer_create(boot_timer_cb, 180, NULL);
-    lv_timer_set_repeat_count(widgets.boot_timer, 1);
     refresh_pending = true;
-    boot_phase_blackout = true;
     last_runtime_ready = false;
     memset(&last_rendered_state, 0, sizeof(last_rendered_state));
     refresh_widgets(zmk_insight_display_state_ptr());
