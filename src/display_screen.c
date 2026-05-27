@@ -49,13 +49,34 @@ static const char *ble_text(const struct zmk_insight_display_state *state) {
 static void refresh_widgets(const struct zmk_insight_display_state *state) {
     const bool left_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID) != 0U;
     const bool right_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID) != 0U;
+    const bool profile_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) != 0U;
+    const bool layer_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U;
 
     if (!zmk_insight_display_runtime_ready()) {
         snprintf(widgets.line1_text, sizeof(widgets.line1_text), "INITIALIZING");
         snprintf(widgets.line2_text, sizeof(widgets.line2_text), "PLEASE WAIT");
     } else {
-        snprintf(widgets.line1_text, sizeof(widgets.line1_text), "%s %s L%u", transport_text(state),
-                 ble_text(state), state->layer);
+        if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
+            snprintf(widgets.line1_text, sizeof(widgets.line1_text), "USB %s",
+                     layer_valid ? "L0" : "L-");
+            if (layer_valid) {
+                snprintf(widgets.line1_text, sizeof(widgets.line1_text), "USB L%u", state->layer);
+            }
+        } else if (profile_valid) {
+            snprintf(widgets.line1_text, sizeof(widgets.line1_text), "BT%u %s %s",
+                     state->profile_index + 1U, ble_text(state), layer_valid ? "L0" : "L-");
+            if (layer_valid) {
+                snprintf(widgets.line1_text, sizeof(widgets.line1_text), "BT%u %s L%u",
+                         state->profile_index + 1U, ble_text(state), state->layer);
+            }
+        } else {
+            snprintf(widgets.line1_text, sizeof(widgets.line1_text), "BT? %s %s", ble_text(state),
+                     layer_valid ? "L0" : "L-");
+            if (layer_valid) {
+                snprintf(widgets.line1_text, sizeof(widgets.line1_text), "BT? %s L%u",
+                         ble_text(state), state->layer);
+            }
+        }
         snprintf(widgets.line2_text, sizeof(widgets.line2_text), "L:%s%u R:%s%u",
                  left_valid ? "" : "-", left_valid ? state->left_battery : 0,
                  right_valid ? "" : "-", right_valid ? state->right_battery : 0);
