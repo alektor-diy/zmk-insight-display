@@ -4,112 +4,8 @@
 
 #include <zmk_insight_display/widgets/battery_status.h>
 
-#ifndef LV_ATTRIBUTE_MEM_ALIGN
-#define LV_ATTRIBUTE_MEM_ALIGN
-#endif
-
-#ifndef LV_ATTRIBUTE_IMG_BATTERY_EMPTY_14X8
-#define LV_ATTRIBUTE_IMG_BATTERY_EMPTY_14X8
-#endif
-
-#ifndef LV_ATTRIBUTE_IMG_BATTERY_25_14X8
-#define LV_ATTRIBUTE_IMG_BATTERY_25_14X8
-#endif
-
-#ifndef LV_ATTRIBUTE_IMG_BATTERY_50_14X8
-#define LV_ATTRIBUTE_IMG_BATTERY_50_14X8
-#endif
-
-#ifndef LV_ATTRIBUTE_IMG_BATTERY_75_14X8
-#define LV_ATTRIBUTE_IMG_BATTERY_75_14X8
-#endif
-
-#ifndef LV_ATTRIBUTE_IMG_BATTERY_FULL_14X8
-#define LV_ATTRIBUTE_IMG_BATTERY_FULL_14X8
-#endif
-
-#define BATTERY_ICON_W 14
-#define BATTERY_ICON_H 8
-
-static const uint8_t battery_empty_14x8_data[] = {
-    0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x80,
-    0x10, 0x80, 0x1C, 0x80, 0x1C, 0x80, 0x1C, 0x80, 0x1C, 0x80, 0x10, 0xFF,
-    0xF0,
-};
-
-static const uint8_t battery_25_14x8_data[] = {
-    0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x80,
-    0x10, 0xB0, 0x1C, 0xB0, 0x1C, 0xB0, 0x1C, 0xB0, 0x1C, 0x80, 0x10, 0xFF,
-    0xF0,
-};
-
-static const uint8_t battery_50_14x8_data[] = {
-    0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x80,
-    0x10, 0xFC, 0x1C, 0xFC, 0x1C, 0xFC, 0x1C, 0xFC, 0x1C, 0x80, 0x10, 0xFF,
-    0xF0,
-};
-
-static const uint8_t battery_75_14x8_data[] = {
-    0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x80,
-    0x10, 0xFF, 0x9C, 0xFF, 0x9C, 0xFF, 0x9C, 0xFF, 0x9C, 0x80, 0x10, 0xFF,
-    0xF0,
-};
-
-static const uint8_t battery_full_14x8_data[] = {
-    0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x80,
-    0x10, 0xFF, 0xFC, 0xFF, 0xFC, 0xFF, 0xFC, 0xFF, 0xFC, 0x80, 0x10, 0xFF,
-    0xF0,
-};
-
-static const lv_img_dsc_t battery_empty_14x8 = {
-    .header.cf = LV_IMG_CF_INDEXED_1BIT,
-    .header.always_zero = 0,
-    .header.reserved = 0,
-    .header.w = BATTERY_ICON_W,
-    .header.h = BATTERY_ICON_H,
-    .data_size = sizeof(battery_empty_14x8_data),
-    .data = battery_empty_14x8_data,
-};
-
-static const lv_img_dsc_t battery_25_14x8 = {
-    .header.cf = LV_IMG_CF_INDEXED_1BIT,
-    .header.always_zero = 0,
-    .header.reserved = 0,
-    .header.w = BATTERY_ICON_W,
-    .header.h = BATTERY_ICON_H,
-    .data_size = sizeof(battery_25_14x8_data),
-    .data = battery_25_14x8_data,
-};
-
-static const lv_img_dsc_t battery_50_14x8 = {
-    .header.cf = LV_IMG_CF_INDEXED_1BIT,
-    .header.always_zero = 0,
-    .header.reserved = 0,
-    .header.w = BATTERY_ICON_W,
-    .header.h = BATTERY_ICON_H,
-    .data_size = sizeof(battery_50_14x8_data),
-    .data = battery_50_14x8_data,
-};
-
-static const lv_img_dsc_t battery_75_14x8 = {
-    .header.cf = LV_IMG_CF_INDEXED_1BIT,
-    .header.always_zero = 0,
-    .header.reserved = 0,
-    .header.w = BATTERY_ICON_W,
-    .header.h = BATTERY_ICON_H,
-    .data_size = sizeof(battery_75_14x8_data),
-    .data = battery_75_14x8_data,
-};
-
-static const lv_img_dsc_t battery_full_14x8 = {
-    .header.cf = LV_IMG_CF_INDEXED_1BIT,
-    .header.always_zero = 0,
-    .header.reserved = 0,
-    .header.w = BATTERY_ICON_W,
-    .header.h = BATTERY_ICON_H,
-    .data_size = sizeof(battery_full_14x8_data),
-    .data = battery_full_14x8_data,
-};
+#define BATTERY_CANVAS_W 5
+#define BATTERY_CANVAS_H 8
 
 static void style_transparent(lv_obj_t *obj) {
     lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
@@ -123,28 +19,37 @@ static void style_text(lv_obj_t *obj, lv_text_align_t align) {
     style_transparent(obj);
 }
 
-static const lv_img_dsc_t *battery_image(uint8_t battery, bool valid) {
+static void draw_battery(lv_obj_t *canvas, uint8_t level, bool valid) {
+    lv_draw_rect_dsc_t rect_fill_dsc;
+
+    lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER);
+    lv_draw_rect_dsc_init(&rect_fill_dsc);
+    rect_fill_dsc.bg_color = lv_color_black();
+    rect_fill_dsc.bg_opa = LV_OPA_COVER;
+    rect_fill_dsc.border_width = 0;
+
+    lv_canvas_set_px(canvas, 0, 0, lv_color_black());
+    lv_canvas_set_px(canvas, 4, 0, lv_color_black());
+
     if (!valid) {
-        return &battery_empty_14x8;
+        return;
     }
 
-    if (battery >= 90U) {
-        return &battery_full_14x8;
+    if (level > 100U) {
+        level = 100U;
     }
 
-    if (battery >= 65U) {
-        return &battery_75_14x8;
+    if (level <= 10U) {
+        lv_canvas_draw_rect(canvas, 1, 2, 3, 5, &rect_fill_dsc);
+    } else if (level <= 30U) {
+        lv_canvas_draw_rect(canvas, 1, 2, 3, 4, &rect_fill_dsc);
+    } else if (level <= 50U) {
+        lv_canvas_draw_rect(canvas, 1, 2, 3, 3, &rect_fill_dsc);
+    } else if (level <= 70U) {
+        lv_canvas_draw_rect(canvas, 1, 2, 3, 2, &rect_fill_dsc);
+    } else if (level <= 90U) {
+        lv_canvas_draw_rect(canvas, 1, 2, 3, 1, &rect_fill_dsc);
     }
-
-    if (battery >= 40U) {
-        return &battery_50_14x8;
-    }
-
-    if (battery >= 15U) {
-        return &battery_25_14x8;
-    }
-
-    return &battery_empty_14x8;
 }
 
 int zmk_insight_display_widget_battery_status_init(
@@ -162,23 +67,20 @@ int zmk_insight_display_widget_battery_status_init(
     style_transparent(widget->root);
     lv_obj_clear_flag(widget->root, LV_OBJ_FLAG_SCROLLABLE);
 
-    widget->side = lv_label_create(widget->root);
-    lv_obj_set_pos(widget->side, 0, 0);
-    lv_obj_set_width(widget->side, 10);
-    style_text(widget->side, LV_TEXT_ALIGN_LEFT);
-    snprintf(widget->text, sizeof(widget->text), "%c:", side_label);
-    lv_label_set_text(widget->side, widget->text);
-
-    widget->icon = lv_img_create(widget->root);
-    lv_obj_set_pos(widget->icon, 12, 2);
-    lv_img_set_src(widget->icon, &battery_empty_14x8);
+    widget->canvas = lv_canvas_create(widget->root);
+    lv_canvas_set_buffer(widget->canvas, widget->canvas_buffer, BATTERY_CANVAS_W, BATTERY_CANVAS_H,
+                         LV_IMG_CF_TRUE_COLOR);
+    lv_obj_set_pos(widget->canvas, 14, 2);
 
     widget->percent = lv_label_create(widget->root);
-    lv_obj_set_pos(widget->percent, 30, 0);
-    lv_obj_set_width(widget->percent, width - 30);
+    lv_obj_set_pos(widget->percent, 24, 0);
+    lv_obj_set_width(widget->percent, width - 24);
     style_text(widget->percent, LV_TEXT_ALIGN_LEFT);
     lv_label_set_text(widget->percent, "--%");
 
+    draw_battery(widget->canvas, 0U, false);
+    snprintf(widget->text, sizeof(widget->text), "%c:--%%", side_label);
+    lv_label_set_text(widget->percent, widget->text);
     return 0;
 }
 
@@ -192,13 +94,14 @@ void zmk_insight_display_widget_battery_status_update(
         battery = 100U;
     }
 
-    lv_img_set_src(widget->icon, battery_image(battery, valid));
+    draw_battery(widget->canvas, battery, valid);
 
     if (!valid) {
-        lv_label_set_text(widget->percent, "--%");
+        snprintf(widget->text, sizeof(widget->text), "%c:--%%", widget->side_label);
+        lv_label_set_text(widget->percent, widget->text);
         return;
     }
 
-    snprintf(widget->text, sizeof(widget->text), "%u%%", battery);
+    snprintf(widget->text, sizeof(widget->text), "%c:%u%%", widget->side_label, battery);
     lv_label_set_text(widget->percent, widget->text);
 }

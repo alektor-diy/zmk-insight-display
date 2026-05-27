@@ -7,11 +7,11 @@
 
 struct zmk_insight_display_widget_battery_status {
     lv_obj_t *root;
-    lv_obj_t *side;
-    lv_obj_t *icon;
+    lv_obj_t *canvas;
     lv_obj_t *percent;
     char side_label;
-    char text[8];
+    char text[12];
+    lv_color_t canvas_buffer[5 * 8];
 };
 
 int zmk_insight_display_widget_battery_status_init(
