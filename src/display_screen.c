@@ -46,23 +46,13 @@ static const char *ble_text(const struct zmk_insight_display_state *state) {
     }
 }
 
-static void battery_icon_text(char *buf, size_t len, uint8_t battery, bool valid) {
-    const char *bars = "---";
-
+static void battery_text(char *buf, size_t len, uint8_t battery, bool valid) {
     if (!valid) {
-        snprintf(buf, len, "[---]--");
+        snprintf(buf, len, "--%%");
         return;
     }
 
-    if (battery >= 80U) {
-        bars = "###";
-    } else if (battery >= 50U) {
-        bars = "##-";
-    } else if (battery >= 20U) {
-        bars = "#--";
-    }
-
-    snprintf(buf, len, "[%s]%u", bars, battery);
+    snprintf(buf, len, "%u%%", battery);
 }
 
 static void refresh_widgets(const struct zmk_insight_display_state *state) {
@@ -102,11 +92,10 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
                          ble_text(state), state->layer);
             }
         }
-        battery_icon_text(left_battery_text, sizeof(left_battery_text), state->left_battery,
-                          left_valid);
-        battery_icon_text(right_battery_text, sizeof(right_battery_text), state->right_battery,
-                          right_valid);
-        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "L%s R%s", left_battery_text,
+        battery_text(left_battery_text, sizeof(left_battery_text), state->left_battery, left_valid);
+        battery_text(right_battery_text, sizeof(right_battery_text), state->right_battery,
+                     right_valid);
+        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "L:%s R:%s", left_battery_text,
                  right_battery_text);
     }
 
