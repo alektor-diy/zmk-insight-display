@@ -23,6 +23,14 @@ static volatile bool refresh_pending = true;
 static bool last_runtime_ready;
 static struct zmk_insight_display_state last_rendered_state;
 
+static const char *boot_text(void) {
+    if (sizeof(CONFIG_ZMK_INSIGHT_DISPLAY_BOOT_TEXT) <= 1U) {
+        return "INITIALIZING...";
+    }
+
+    return CONFIG_ZMK_INSIGHT_DISPLAY_BOOT_TEXT;
+}
+
 static const char *ble_text(const struct zmk_insight_display_state *state) {
     if ((state->flags & ZMK_INSIGHT_DISPLAY_FLAG_BLE_VALID) == 0U) {
         return "---";
@@ -66,8 +74,8 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     char right_battery_text[12];
 
     if (!zmk_insight_display_runtime_ready()) {
-        snprintf(widgets.line1_text, sizeof(widgets.line1_text), "--");
-        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "--");
+        snprintf(widgets.line1_text, sizeof(widgets.line1_text), "%s", boot_text());
+        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "");
     } else {
         if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
             snprintf(widgets.line1_text, sizeof(widgets.line1_text), "USB %s",

@@ -27,4 +27,12 @@ config ZMK_INSIGHT_DISPLAY_MAX_SERVICE_READ
       Internal guard for the sync payload size when a peripheral reads the
       central-side state snapshot.
 
+config ZMK_INSIGHT_DISPLAY_BOOT_TEXT
+    string "Boot text"
+    default "INITIALIZING..."
+    help
+      Text shown centered on the OLED before representative state is ready.
+      Leave the default for a generic startup message, or override it from
+      your config to brand the keyboard.
+
 endif
