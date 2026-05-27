@@ -48,8 +48,6 @@ static const char *ble_text(const struct zmk_insight_display_state *state) {
 }
 
 static void refresh_widgets(const struct zmk_insight_display_state *state) {
-    const bool left_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID) != 0U;
-    const bool right_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID) != 0U;
     const bool profile_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) != 0U;
     const bool layer_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U;
 
@@ -83,10 +81,6 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
                          ble_text(state), state->layer);
             }
         }
-        zmk_insight_display_widget_battery_status_update(&widgets.left_battery, state->left_battery,
-                                                         left_valid);
-        zmk_insight_display_widget_battery_status_update(&widgets.right_battery,
-                                                         state->right_battery, right_valid);
     }
 
     lv_label_set_text(widgets.line1, widgets.line1_text);

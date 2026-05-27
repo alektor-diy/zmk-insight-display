@@ -4,8 +4,10 @@
 #include <stdint.h>
 
 #include <lvgl.h>
+#include <zephyr/kernel.h>
 
 struct zmk_insight_display_widget_battery_status {
+    sys_snode_t node;
     lv_obj_t *root;
     lv_obj_t *canvas;
     lv_obj_t *percent;

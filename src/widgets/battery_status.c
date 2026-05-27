@@ -2,10 +2,17 @@
 
 #include <lvgl.h>
 
+#include <zmk/display.h>
+#include <zmk/event_manager.h>
+
+#include <zmk_insight_display/events/state_changed.h>
+#include <zmk_insight_display/state.h>
 #include <zmk_insight_display/widgets/battery_status.h>
 
 #define BATTERY_CANVAS_W 5
 #define BATTERY_CANVAS_H 8
+
+static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
 static void style_transparent(lv_obj_t *obj) {
     lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
@@ -52,6 +59,50 @@ static void draw_battery(lv_obj_t *canvas, uint8_t level, bool valid) {
     }
 }
 
+static void set_battery_widget(struct zmk_insight_display_widget_battery_status *widget,
+                               struct zmk_insight_display_state state) {
+    const bool is_left = widget->side_label == 'L';
+    const bool valid =
+        (state.flags & (is_left ? ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID
+                                : ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID)) != 0U;
+    uint8_t battery = is_left ? state.left_battery : state.right_battery;
+
+    if (battery > 100U) {
+        battery = 100U;
+    }
+
+    draw_battery(widget->canvas, battery, valid);
+
+    if (!valid) {
+        snprintf(widget->text, sizeof(widget->text), "%c:--%%", widget->side_label);
+        lv_label_set_text(widget->percent, widget->text);
+        return;
+    }
+
+    snprintf(widget->text, sizeof(widget->text), "%c:%u%%", widget->side_label, battery);
+    lv_label_set_text(widget->percent, widget->text);
+}
+
+static void battery_status_update_cb(struct zmk_insight_display_state state) {
+    struct zmk_insight_display_widget_battery_status *widget;
+
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_battery_widget(widget, state); }
+}
+
+static struct zmk_insight_display_state battery_status_get_state(const zmk_event_t *eh) {
+    const struct zmk_insight_display_state_changed *ev = as_zmk_insight_display_state_changed(eh);
+
+    if (ev != NULL) {
+        return ev->state;
+    }
+
+    return *zmk_insight_display_state_ptr();
+}
+
+ZMK_DISPLAY_WIDGET_LISTENER(widget_insight_battery_status, struct zmk_insight_display_state,
+                            battery_status_update_cb, battery_status_get_state)
+ZMK_SUBSCRIPTION(widget_insight_battery_status, zmk_insight_display_state_changed);
+
 int zmk_insight_display_widget_battery_status_init(
     struct zmk_insight_display_widget_battery_status *widget, lv_obj_t *parent, lv_coord_t x,
     lv_coord_t y, lv_coord_t width, char side_label) {
@@ -81,27 +132,14 @@ int zmk_insight_display_widget_battery_status_init(
     draw_battery(widget->canvas, 0U, false);
     snprintf(widget->text, sizeof(widget->text), "%c:--%%", side_label);
     lv_label_set_text(widget->percent, widget->text);
+    sys_slist_append(&widgets, &widget->node);
+    widget_insight_battery_status_init();
     return 0;
 }
 
 void zmk_insight_display_widget_battery_status_update(
     struct zmk_insight_display_widget_battery_status *widget, uint8_t battery, bool valid) {
-    if (widget == NULL || widget->root == NULL) {
-        return;
-    }
-
-    if (battery > 100U) {
-        battery = 100U;
-    }
-
-    draw_battery(widget->canvas, battery, valid);
-
-    if (!valid) {
-        snprintf(widget->text, sizeof(widget->text), "%c:--%%", widget->side_label);
-        lv_label_set_text(widget->percent, widget->text);
-        return;
-    }
-
-    snprintf(widget->text, sizeof(widget->text), "%c:%u%%", widget->side_label, battery);
-    lv_label_set_text(widget->percent, widget->text);
+    ARG_UNUSED(widget);
+    ARG_UNUSED(battery);
+    ARG_UNUSED(valid);
 }
