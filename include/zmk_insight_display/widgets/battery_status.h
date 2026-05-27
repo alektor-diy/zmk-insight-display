@@ -6,9 +6,14 @@
 #include <lvgl.h>
 
 struct zmk_insight_display_widget_battery_status {
-    lv_obj_t *label;
+    lv_obj_t *root;
+    lv_obj_t *side;
+    lv_obj_t *outline;
+    lv_obj_t *fill;
+    lv_obj_t *cap;
+    lv_obj_t *percent;
     char side_label;
-    char text[24];
+    char text[8];
 };
 
 int zmk_insight_display_widget_battery_status_init(
