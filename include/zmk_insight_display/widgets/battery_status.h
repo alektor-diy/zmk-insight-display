@@ -7,7 +7,8 @@
 
 struct zmk_insight_display_widget_battery_status {
     lv_obj_t *label;
-    char text[16];
+    char side_label;
+    char text[24];
 };
 
 int zmk_insight_display_widget_battery_status_init(
