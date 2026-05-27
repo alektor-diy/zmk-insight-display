@@ -12,11 +12,13 @@ struct insight_display_widgets {
     lv_obj_t *screen;
     lv_obj_t *line1;
     lv_obj_t *line2;
+    lv_timer_t *refresh_timer;
     char line1_text[24];
     char line2_text[24];
 };
 
 static struct insight_display_widgets widgets;
+static volatile bool refresh_pending = true;
 
 static const char *transport_text(const struct zmk_insight_display_state *state) {
     if ((state->flags & ZMK_INSIGHT_DISPLAY_FLAG_OUTPUT_VALID) == 0U) {
@@ -61,11 +63,20 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     lv_obj_invalidate(widgets.screen);
 }
 
+static void refresh_timer_cb(lv_timer_t *timer) {
+    ARG_UNUSED(timer);
+
+    if (widgets.screen == NULL || !refresh_pending) {
+        return;
+    }
+
+    refresh_pending = false;
+    refresh_widgets(zmk_insight_display_state_ptr());
+}
+
 static int display_listener(const zmk_event_t *eh) {
     ARG_UNUSED(eh);
-    if (widgets.screen != NULL) {
-        refresh_widgets(zmk_insight_display_state_ptr());
-    }
+    refresh_pending = true;
     return 0;
 }
 
@@ -102,6 +113,8 @@ lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_set_style_bg_opa(widgets.line2, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(widgets.line2, 0, 0);
 
+    widgets.refresh_timer = lv_timer_create(refresh_timer_cb, 33, NULL);
+    refresh_pending = true;
     refresh_widgets(zmk_insight_display_state_ptr());
     return widgets.screen;
 }
