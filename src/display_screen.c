@@ -8,21 +8,14 @@
 #include <zmk_insight_display/events/state_changed.h>
 #include <zmk_insight_display/private.h>
 #include <zmk_insight_display/state.h>
-
-struct insight_battery_widget {
-    lv_obj_t *label;
-    lv_obj_t *bar_bg;
-    lv_obj_t *bar_fill;
-    lv_obj_t *value;
-    char value_text[8];
-};
+#include <zmk_insight_display/widgets/battery_status.h>
 
 struct insight_display_widgets {
     lv_obj_t *screen;
     lv_obj_t *line1;
+    struct zmk_insight_display_widget_battery_status left_battery;
+    struct zmk_insight_display_widget_battery_status right_battery;
     lv_timer_t *refresh_timer;
-    struct insight_battery_widget left_battery;
-    struct insight_battery_widget right_battery;
     char line1_text[24];
 };
 
@@ -54,81 +47,6 @@ static const char *ble_text(const struct zmk_insight_display_state *state) {
     }
 }
 
-static void set_battery_visibility(bool visible) {
-    if (visible) {
-        lv_obj_clear_flag(widgets.left_battery.label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(widgets.left_battery.bar_bg, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(widgets.left_battery.value, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(widgets.right_battery.label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(widgets.right_battery.bar_bg, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(widgets.right_battery.value, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(widgets.left_battery.label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(widgets.left_battery.bar_bg, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(widgets.left_battery.value, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(widgets.right_battery.label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(widgets.right_battery.bar_bg, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(widgets.right_battery.value, LV_OBJ_FLAG_HIDDEN);
-    }
-}
-
-static void init_battery_widget(struct insight_battery_widget *widget, lv_obj_t *parent,
-                                lv_coord_t origin_x, const char *label_text) {
-    widget->label = lv_label_create(parent);
-    lv_obj_set_pos(widget->label, origin_x, 20);
-    lv_obj_set_width(widget->label, 8);
-    lv_obj_set_style_text_color(widget->label, lv_color_black(), 0);
-    lv_obj_set_style_bg_opa(widget->label, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(widget->label, 0, 0);
-    lv_label_set_text(widget->label, label_text);
-
-    widget->bar_bg = lv_obj_create(parent);
-    lv_obj_set_pos(widget->bar_bg, origin_x + 10, 21);
-    lv_obj_set_size(widget->bar_bg, 20, 6);
-    lv_obj_set_style_bg_opa(widget->bar_bg, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(widget->bar_bg, 1, 0);
-    lv_obj_set_style_border_color(widget->bar_bg, lv_color_black(), 0);
-    lv_obj_set_style_radius(widget->bar_bg, 1, 0);
-    lv_obj_set_style_pad_all(widget->bar_bg, 0, 0);
-    lv_obj_clear_flag(widget->bar_bg, LV_OBJ_FLAG_SCROLLABLE);
-
-    widget->bar_fill = lv_obj_create(widget->bar_bg);
-    lv_obj_set_pos(widget->bar_fill, 0, 0);
-    lv_obj_set_size(widget->bar_fill, 0, 6);
-    lv_obj_set_style_bg_opa(widget->bar_fill, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(widget->bar_fill, lv_color_black(), 0);
-    lv_obj_set_style_border_width(widget->bar_fill, 0, 0);
-    lv_obj_set_style_radius(widget->bar_fill, 0, 0);
-    lv_obj_clear_flag(widget->bar_fill, LV_OBJ_FLAG_SCROLLABLE);
-
-    widget->value = lv_label_create(parent);
-    lv_obj_set_pos(widget->value, origin_x + 34, 18);
-    lv_obj_set_width(widget->value, 28);
-    lv_obj_set_style_text_align(widget->value, LV_TEXT_ALIGN_LEFT, 0);
-    lv_obj_set_style_text_color(widget->value, lv_color_black(), 0);
-    lv_obj_set_style_bg_opa(widget->value, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(widget->value, 0, 0);
-    lv_label_set_text(widget->value, "--%");
-}
-
-static void update_battery_widget(struct insight_battery_widget *widget, uint8_t battery,
-                                  bool valid) {
-    lv_coord_t fill_width = 0;
-
-    if (valid) {
-        if (battery > 100U) {
-            battery = 100U;
-        }
-        fill_width = (lv_coord_t)((20U * battery) / 100U);
-        snprintf(widget->value_text, sizeof(widget->value_text), "%u%%", battery);
-    } else {
-        snprintf(widget->value_text, sizeof(widget->value_text), "--%%");
-    }
-
-    lv_obj_set_width(widget->bar_fill, fill_width);
-    lv_label_set_text(widget->value, widget->value_text);
-}
-
 static void refresh_widgets(const struct zmk_insight_display_state *state) {
     const bool left_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID) != 0U;
     const bool right_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID) != 0U;
@@ -138,11 +56,12 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     if (!zmk_insight_display_runtime_ready()) {
         snprintf(widgets.line1_text, sizeof(widgets.line1_text), "%s", boot_text());
         lv_obj_set_y(widgets.line1, 11);
-        set_battery_visibility(false);
+        lv_obj_add_flag(widgets.left_battery.label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(widgets.right_battery.label, LV_OBJ_FLAG_HIDDEN);
     } else {
         lv_obj_set_y(widgets.line1, 4);
-        set_battery_visibility(true);
-
+        lv_obj_clear_flag(widgets.left_battery.label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(widgets.right_battery.label, LV_OBJ_FLAG_HIDDEN);
         if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
             snprintf(widgets.line1_text, sizeof(widgets.line1_text), "USB %s",
                      layer_valid ? "L0" : "L-");
@@ -164,9 +83,10 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
                          ble_text(state), state->layer);
             }
         }
-
-        update_battery_widget(&widgets.left_battery, state->left_battery, left_valid);
-        update_battery_widget(&widgets.right_battery, state->right_battery, right_valid);
+        zmk_insight_display_widget_battery_status_update(&widgets.left_battery, state->left_battery,
+                                                         left_valid);
+        zmk_insight_display_widget_battery_status_update(&widgets.right_battery,
+                                                         state->right_battery, right_valid);
     }
 
     lv_label_set_text(widgets.line1, widgets.line1_text);
@@ -226,8 +146,10 @@ lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_set_style_bg_opa(widgets.line1, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(widgets.line1, 0, 0);
 
-    init_battery_widget(&widgets.left_battery, widgets.screen, 3, "L");
-    init_battery_widget(&widgets.right_battery, widgets.screen, 67, "R");
+    (void)zmk_insight_display_widget_battery_status_init(&widgets.left_battery, widgets.screen, 0,
+                                                         18, 64, 'L');
+    (void)zmk_insight_display_widget_battery_status_init(&widgets.right_battery, widgets.screen, 64,
+                                                         18, 64, 'R');
 
     widgets.refresh_timer = lv_timer_create(refresh_timer_cb, 33, NULL);
     refresh_pending = true;

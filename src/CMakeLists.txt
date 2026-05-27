@@ -4,6 +4,7 @@ target_sources(app PRIVATE
   config.c
   local_battery.c
   events/state_changed.c
+  widgets/battery_status.c
 )
 
 if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
