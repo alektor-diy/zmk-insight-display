@@ -38,11 +38,32 @@ static const char *ble_text(const struct zmk_insight_display_state *state) {
     }
 }
 
+static void battery_icon_text(char *buf, size_t len, uint8_t battery, bool valid) {
+    const char *bars = "---";
+
+    if (!valid) {
+        snprintf(buf, len, "[---]--");
+        return;
+    }
+
+    if (battery >= 80U) {
+        bars = "###";
+    } else if (battery >= 50U) {
+        bars = "##-";
+    } else if (battery >= 20U) {
+        bars = "#--";
+    }
+
+    snprintf(buf, len, "[%s]%u", bars, battery);
+}
+
 static void refresh_widgets(const struct zmk_insight_display_state *state) {
     const bool left_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID) != 0U;
     const bool right_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID) != 0U;
     const bool profile_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) != 0U;
     const bool layer_valid = (state->flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U;
+    char left_battery_text[12];
+    char right_battery_text[12];
 
     if (!zmk_insight_display_runtime_ready()) {
         snprintf(widgets.line1_text, sizeof(widgets.line1_text), "--");
@@ -69,9 +90,12 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
                          ble_text(state), state->layer);
             }
         }
-        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "L:%s%u R:%s%u",
-                 left_valid ? "" : "-", left_valid ? state->left_battery : 0,
-                 right_valid ? "" : "-", right_valid ? state->right_battery : 0);
+        battery_icon_text(left_battery_text, sizeof(left_battery_text), state->left_battery,
+                          left_valid);
+        battery_icon_text(right_battery_text, sizeof(right_battery_text), state->right_battery,
+                          right_valid);
+        snprintf(widgets.line2_text, sizeof(widgets.line2_text), "L%s R%s", left_battery_text,
+                 right_battery_text);
     }
 
     lv_label_set_text(widgets.line1, widgets.line1_text);
