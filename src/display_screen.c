@@ -76,7 +76,11 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
     if (!zmk_insight_display_runtime_ready()) {
         snprintf(widgets.line1_text, sizeof(widgets.line1_text), "%s", boot_text());
         snprintf(widgets.line2_text, sizeof(widgets.line2_text), "");
+        lv_obj_set_y(widgets.line1, 11);
+        lv_obj_add_flag(widgets.line2, LV_OBJ_FLAG_HIDDEN);
     } else {
+        lv_obj_set_y(widgets.line1, 4);
+        lv_obj_clear_flag(widgets.line2, LV_OBJ_FLAG_HIDDEN);
         if (state->output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
             snprintf(widgets.line1_text, sizeof(widgets.line1_text), "USB %s",
                      layer_valid ? "L0" : "L-");
