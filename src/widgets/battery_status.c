@@ -6,87 +6,46 @@
 #include <zmk/event_manager.h>
 
 #include <zmk_insight_display/events/state_changed.h>
+#include <zmk_insight_display/private.h>
 #include <zmk_insight_display/state.h>
 #include <zmk_insight_display/widgets/battery_status.h>
 
-#define BATTERY_CANVAS_W 5
-#define BATTERY_CANVAS_H 8
-
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
-static void style_transparent(lv_obj_t *obj) {
-    lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(obj, 0, 0);
-    lv_obj_set_style_pad_all(obj, 0, 0);
-}
-
-static void style_text(lv_obj_t *obj, lv_text_align_t align) {
-    lv_obj_set_style_text_color(obj, lv_color_black(), 0);
-    lv_obj_set_style_text_align(obj, align, 0);
-    style_transparent(obj);
-}
-
-static void draw_battery(lv_obj_t *canvas, uint8_t level, bool valid) {
-    lv_draw_rect_dsc_t rect_fill_dsc;
-
-    lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER);
-    lv_draw_rect_dsc_init(&rect_fill_dsc);
-    rect_fill_dsc.bg_color = lv_color_black();
-    rect_fill_dsc.bg_opa = LV_OPA_COVER;
-    rect_fill_dsc.border_width = 0;
-
-    lv_canvas_set_px(canvas, 0, 0, lv_color_black());
-    lv_canvas_set_px(canvas, 4, 0, lv_color_black());
-
-    if (!valid) {
-        return;
-    }
-
-    if (level > 100U) {
-        level = 100U;
-    }
-
-    if (level <= 10U) {
-        lv_canvas_draw_rect(canvas, 1, 2, 3, 5, &rect_fill_dsc);
-    } else if (level <= 30U) {
-        lv_canvas_draw_rect(canvas, 1, 2, 3, 4, &rect_fill_dsc);
-    } else if (level <= 50U) {
-        lv_canvas_draw_rect(canvas, 1, 2, 3, 3, &rect_fill_dsc);
-    } else if (level <= 70U) {
-        lv_canvas_draw_rect(canvas, 1, 2, 3, 2, &rect_fill_dsc);
-    } else if (level <= 90U) {
-        lv_canvas_draw_rect(canvas, 1, 2, 3, 1, &rect_fill_dsc);
-    }
-}
-
-static void set_battery_widget(struct zmk_insight_display_widget_battery_status *widget,
+static void set_battery_status(struct zmk_insight_display_widget_battery_status *widget,
                                struct zmk_insight_display_state state) {
+    const bool runtime_ready = zmk_insight_display_runtime_ready();
     const bool is_left = widget->side_label == 'L';
     const bool valid =
         (state.flags & (is_left ? ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID
                                 : ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID)) != 0U;
     uint8_t battery = is_left ? state.left_battery : state.right_battery;
 
+    if (!runtime_ready) {
+        lv_obj_add_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+
+    lv_obj_clear_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
+
+    if (!valid) {
+        snprintf(widget->text, sizeof(widget->text), "%c:--%%", widget->side_label);
+        lv_label_set_text(widget->obj, widget->text);
+        return;
+    }
+
     if (battery > 100U) {
         battery = 100U;
     }
 
-    draw_battery(widget->canvas, battery, valid);
-
-    if (!valid) {
-        snprintf(widget->text, sizeof(widget->text), "%c:--%%", widget->side_label);
-        lv_label_set_text(widget->percent, widget->text);
-        return;
-    }
-
     snprintf(widget->text, sizeof(widget->text), "%c:%u%%", widget->side_label, battery);
-    lv_label_set_text(widget->percent, widget->text);
+    lv_label_set_text(widget->obj, widget->text);
 }
 
 static void battery_status_update_cb(struct zmk_insight_display_state state) {
     struct zmk_insight_display_widget_battery_status *widget;
 
-    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_battery_widget(widget, state); }
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_battery_status(widget, state); }
 }
 
 static struct zmk_insight_display_state battery_status_get_state(const zmk_event_t *eh) {
@@ -111,27 +70,18 @@ int zmk_insight_display_widget_battery_status_init(
     }
 
     widget->side_label = side_label;
+    widget->obj = lv_label_create(parent);
+    lv_obj_set_pos(widget->obj, x, y);
+    lv_obj_set_width(widget->obj, width);
+    lv_obj_set_style_text_align(widget->obj, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_color(widget->obj, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(widget->obj, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(widget->obj, 0, 0);
 
-    widget->root = lv_obj_create(parent);
-    lv_obj_set_pos(widget->root, x, y);
-    lv_obj_set_size(widget->root, width, 12);
-    style_transparent(widget->root);
-    lv_obj_clear_flag(widget->root, LV_OBJ_FLAG_SCROLLABLE);
-
-    widget->canvas = lv_canvas_create(widget->root);
-    lv_canvas_set_buffer(widget->canvas, widget->canvas_buffer, BATTERY_CANVAS_W, BATTERY_CANVAS_H,
-                         LV_IMG_CF_TRUE_COLOR);
-    lv_obj_set_pos(widget->canvas, 14, 2);
-
-    widget->percent = lv_label_create(widget->root);
-    lv_obj_set_pos(widget->percent, 24, 0);
-    lv_obj_set_width(widget->percent, width - 24);
-    style_text(widget->percent, LV_TEXT_ALIGN_LEFT);
-    lv_label_set_text(widget->percent, "--%");
-
-    draw_battery(widget->canvas, 0U, false);
     snprintf(widget->text, sizeof(widget->text), "%c:--%%", side_label);
-    lv_label_set_text(widget->percent, widget->text);
+    lv_label_set_text(widget->obj, widget->text);
+    lv_obj_add_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
+
     sys_slist_append(&widgets, &widget->node);
     widget_insight_battery_status_init();
     return 0;

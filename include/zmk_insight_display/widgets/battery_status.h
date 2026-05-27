@@ -8,12 +8,9 @@
 
 struct zmk_insight_display_widget_battery_status {
     sys_snode_t node;
-    lv_obj_t *root;
-    lv_obj_t *canvas;
-    lv_obj_t *percent;
+    lv_obj_t *obj;
     char side_label;
     char text[12];
-    lv_color_t canvas_buffer[5 * 8];
 };
 
 int zmk_insight_display_widget_battery_status_init(
