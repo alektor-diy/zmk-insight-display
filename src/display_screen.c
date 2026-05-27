@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include <lvgl.h>
 #include <widgets/lv_label.h>
@@ -19,6 +20,8 @@ struct insight_display_widgets {
 
 static struct insight_display_widgets widgets;
 static volatile bool refresh_pending = true;
+static bool last_runtime_ready;
+static struct zmk_insight_display_state last_rendered_state;
 
 static const char *transport_text(const struct zmk_insight_display_state *state) {
     if ((state->flags & ZMK_INSIGHT_DISPLAY_FLAG_OUTPUT_VALID) == 0U) {
@@ -64,14 +67,25 @@ static void refresh_widgets(const struct zmk_insight_display_state *state) {
 }
 
 static void refresh_timer_cb(lv_timer_t *timer) {
+    const struct zmk_insight_display_state *state;
+    const bool runtime_ready = zmk_insight_display_runtime_ready();
+
     ARG_UNUSED(timer);
 
-    if (widgets.screen == NULL || !refresh_pending) {
+    if (widgets.screen == NULL) {
+        return;
+    }
+
+    state = zmk_insight_display_state_ptr();
+    if (!refresh_pending && runtime_ready == last_runtime_ready &&
+        memcmp(&last_rendered_state, state, sizeof(last_rendered_state)) == 0) {
         return;
     }
 
     refresh_pending = false;
-    refresh_widgets(zmk_insight_display_state_ptr());
+    last_runtime_ready = runtime_ready;
+    last_rendered_state = *state;
+    refresh_widgets(state);
 }
 
 static int display_listener(const zmk_event_t *eh) {
@@ -115,6 +129,8 @@ lv_obj_t *zmk_display_status_screen(void) {
 
     widgets.refresh_timer = lv_timer_create(refresh_timer_cb, 33, NULL);
     refresh_pending = true;
+    last_runtime_ready = false;
+    memset(&last_rendered_state, 0, sizeof(last_rendered_state));
     refresh_widgets(zmk_insight_display_state_ptr());
     return widgets.screen;
 }
