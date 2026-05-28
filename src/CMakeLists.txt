@@ -20,7 +20,10 @@ endif()
 if(CONFIG_ZMK_DISPLAY)
   target_sources(app PRIVATE
     widgets/battery_status.c
+    widgets/layer_status.c
     widgets/line1_status.c
+    widgets/output_status.c
+    widgets/output_status_sym.c
     display_screen.c
   )
 endif()

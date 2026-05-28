@@ -20,59 +20,20 @@ static const char *boot_text(void) {
     return CONFIG_ZMK_INSIGHT_DISPLAY_BOOT_TEXT;
 }
 
-static const char *ble_text(const struct zmk_insight_display_state *state) {
-    if ((state->flags & ZMK_INSIGHT_DISPLAY_FLAG_BLE_VALID) == 0U) {
-        return "---";
-    }
-
-    switch (state->ble_state) {
-    case ZMK_INSIGHT_DISPLAY_BLE_STATE_CONNECTED:
-        return "CON";
-    case ZMK_INSIGHT_DISPLAY_BLE_STATE_ADVERTISING:
-        return "ADV";
-    default:
-        return "---";
-    }
-}
-
 static void set_line1_status(struct zmk_insight_display_widget_line1_status *widget,
                              struct zmk_insight_display_state state) {
     const bool runtime_ready = zmk_insight_display_runtime_ready();
-    const bool profile_valid = (state.flags & ZMK_INSIGHT_DISPLAY_FLAG_PROFILE_VALID) != 0U;
-    const bool layer_valid = (state.flags & ZMK_INSIGHT_DISPLAY_FLAG_LAYER_VALID) != 0U;
+    ARG_UNUSED(state);
 
     if (!runtime_ready) {
         snprintf(widget->text, sizeof(widget->text), "%s", boot_text());
         lv_obj_set_y(widget->obj, 11);
         lv_label_set_text(widget->obj, widget->text);
+        lv_obj_clear_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
         return;
     }
 
-    lv_obj_set_y(widget->obj, 4);
-    if (state.output == ZMK_INSIGHT_DISPLAY_TRANSPORT_USB) {
-        if (layer_valid) {
-            snprintf(widget->text, sizeof(widget->text), "USB L%u", state.layer);
-        } else {
-            snprintf(widget->text, sizeof(widget->text), "USB L-");
-        }
-    } else if (profile_valid) {
-        if (layer_valid) {
-            snprintf(widget->text, sizeof(widget->text), "BT%u %s L%u",
-                     state.profile_index + 1U, ble_text(&state), state.layer);
-        } else {
-            snprintf(widget->text, sizeof(widget->text), "BT%u %s L-",
-                     state.profile_index + 1U, ble_text(&state));
-        }
-    } else {
-        if (layer_valid) {
-            snprintf(widget->text, sizeof(widget->text), "BT? %s L%u", ble_text(&state),
-                     state.layer);
-        } else {
-            snprintf(widget->text, sizeof(widget->text), "BT? %s L-", ble_text(&state));
-        }
-    }
-
-    lv_label_set_text(widget->obj, widget->text);
+    lv_obj_add_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void line1_status_update_cb(struct zmk_insight_display_state state) {

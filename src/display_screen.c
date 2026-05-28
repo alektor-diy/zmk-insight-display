@@ -1,11 +1,15 @@
 #include <lvgl.h>
 
 #include <zmk_insight_display/widgets/battery_status.h>
+#include <zmk_insight_display/widgets/layer_status.h>
 #include <zmk_insight_display/widgets/line1_status.h>
+#include <zmk_insight_display/widgets/output_status.h>
 
 static struct zmk_insight_display_widget_line1_status line1_status_widget;
+static struct zmk_insight_display_widget_output_status output_status_widget;
 static struct zmk_insight_display_widget_battery_status left_battery_widget;
 static struct zmk_insight_display_widget_battery_status right_battery_widget;
+static struct zmk_insight_display_widget_layer_status layer_status_widget;
 
 static lv_style_t global_style;
 static bool style_initialized;
@@ -30,9 +34,18 @@ lv_obj_t *zmk_display_status_screen(void) {
 
     lv_obj_add_style(screen, &global_style, LV_PART_MAIN);
 
-    zmk_insight_display_widget_line1_status_init(&line1_status_widget, screen, 0, 4, 128);
+    zmk_insight_display_widget_line1_status_init(&line1_status_widget, screen, 0, 11, 128);
+
+    zmk_insight_display_widget_output_status_init(&output_status_widget, screen);
+    lv_obj_align(zmk_insight_display_widget_output_status_obj(&output_status_widget), LV_ALIGN_TOP_LEFT, 0,
+                 0);
+
     zmk_insight_display_widget_battery_status_init(&left_battery_widget, screen, 0, 18, 64, 'L');
-    zmk_insight_display_widget_battery_status_init(&right_battery_widget, screen, 64, 18, 64, 'R');
+    zmk_insight_display_widget_battery_status_init(&right_battery_widget, screen, 64, 0, 64, 'R');
+
+    zmk_insight_display_widget_layer_status_init(&layer_status_widget, screen);
+    lv_obj_align(zmk_insight_display_widget_layer_status_obj(&layer_status_widget), LV_ALIGN_BOTTOM_RIGHT, 0,
+                 0);
 
     return screen;
 }
