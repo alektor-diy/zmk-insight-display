@@ -12,6 +12,14 @@
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
+struct battery_object {
+    lv_obj_t *symbol;
+    lv_obj_t *label;
+};
+
+static struct battery_object battery_objects[2];
+static lv_color_t battery_image_buffer[2][5 * 8];
+
 static void draw_battery(lv_obj_t *canvas, uint8_t level, bool valid) {
     lv_draw_rect_dsc_t rect_fill_dsc;
 
@@ -45,42 +53,49 @@ static void draw_battery(lv_obj_t *canvas, uint8_t level, bool valid) {
     }
 }
 
-static void set_battery_status(struct zmk_insight_display_widget_battery_status *widget,
-                               struct zmk_insight_display_state state) {
-    const bool runtime_ready = zmk_insight_display_runtime_ready();
-    const bool is_left = widget->side_label == 'L';
-    const bool valid =
-        (state.flags & (is_left ? ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID
-                                : ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID)) != 0U;
-    uint8_t battery = is_left ? state.left_battery : state.right_battery;
+static void set_battery_line(uint8_t index, uint8_t level, bool valid, bool runtime_ready) {
+    static const char side_labels[] = {'L', 'R'};
+    char text[12];
+
+    if (index >= 2) {
+        return;
+    }
 
     if (!runtime_ready) {
-        lv_obj_add_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(battery_objects[index].symbol, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(battery_objects[index].label, LV_OBJ_FLAG_HIDDEN);
         return;
     }
 
-    lv_obj_clear_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
+    draw_battery(battery_objects[index].symbol, level, valid);
 
     if (!valid) {
-        draw_battery(widget->canvas, 0U, false);
-        snprintf(widget->text, sizeof(widget->text), "%c:--%%", widget->side_label);
-        lv_label_set_text(widget->label, widget->text);
-        return;
+        snprintf(text, sizeof(text), "%c:--%%", side_labels[index]);
+    } else {
+        snprintf(text, sizeof(text), "%c:%u%%", side_labels[index], level > 100U ? 100U : level);
     }
 
-    if (battery > 100U) {
-        battery = 100U;
-    }
+    lv_label_set_text(battery_objects[index].label, text);
+    lv_obj_clear_flag(battery_objects[index].symbol, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(battery_objects[index].label, LV_OBJ_FLAG_HIDDEN);
+}
 
-    draw_battery(widget->canvas, battery, true);
-    snprintf(widget->text, sizeof(widget->text), "%c:%u%%", widget->side_label, battery);
-    lv_label_set_text(widget->label, widget->text);
+static void set_battery_status(struct zmk_insight_display_state state) {
+    const bool runtime_ready = zmk_insight_display_runtime_ready();
+    const bool left_valid = (state.flags & ZMK_INSIGHT_DISPLAY_FLAG_LEFT_BATTERY_VALID) != 0U;
+    const bool right_valid = (state.flags & ZMK_INSIGHT_DISPLAY_FLAG_RIGHT_BATTERY_VALID) != 0U;
+
+    set_battery_line(0, state.left_battery, left_valid, runtime_ready);
+    set_battery_line(1, state.right_battery, right_valid, runtime_ready);
 }
 
 static void battery_status_update_cb(struct zmk_insight_display_state state) {
     struct zmk_insight_display_widget_battery_status *widget;
 
-    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_battery_status(widget, state); }
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
+        ARG_UNUSED(widget);
+        set_battery_status(state);
+    }
 }
 
 static struct zmk_insight_display_state battery_status_get_state(const zmk_event_t *eh) {
@@ -98,46 +113,43 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_insight_battery_status, struct zmk_insight_di
 ZMK_SUBSCRIPTION(widget_insight_battery_status, zmk_insight_display_state_changed);
 
 int zmk_insight_display_widget_battery_status_init(
-    struct zmk_insight_display_widget_battery_status *widget, lv_obj_t *parent, lv_coord_t x,
-    lv_coord_t y, lv_coord_t width, char side_label) {
+    struct zmk_insight_display_widget_battery_status *widget, lv_obj_t *parent) {
+    int i;
+
     if (widget == NULL || parent == NULL) {
         return -1;
     }
 
-    widget->side_label = side_label;
     widget->obj = lv_obj_create(parent);
-    lv_obj_set_pos(widget->obj, x, y);
-    lv_obj_set_size(widget->obj, width, 12);
+    lv_obj_set_size(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(widget->obj, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(widget->obj, 0, 0);
     lv_obj_set_style_pad_all(widget->obj, 0, 0);
     lv_obj_clear_flag(widget->obj, LV_OBJ_FLAG_SCROLLABLE);
 
-    widget->canvas = lv_canvas_create(widget->obj);
-    lv_canvas_set_buffer(widget->canvas, widget->canvas_buffer, 5, 8, LV_IMG_CF_TRUE_COLOR);
-    lv_obj_set_pos(widget->canvas, 14, 2);
+    for (i = 0; i < 2; i++) {
+        lv_obj_t *image_canvas = lv_canvas_create(widget->obj);
+        lv_obj_t *battery_label = lv_label_create(widget->obj);
 
-    widget->label = lv_label_create(widget->obj);
-    lv_obj_set_pos(widget->label, 24, 0);
-    lv_obj_set_width(widget->label, width - 24);
-    lv_obj_set_style_text_align(widget->label, LV_TEXT_ALIGN_LEFT, 0);
-    lv_obj_set_style_text_color(widget->label, lv_color_black(), 0);
-    lv_obj_set_style_bg_opa(widget->label, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(widget->label, 0, 0);
+        lv_canvas_set_buffer(image_canvas, battery_image_buffer[i], 5, 8, LV_IMG_CF_TRUE_COLOR);
+        lv_obj_align(image_canvas, LV_ALIGN_TOP_RIGHT, 0, i * 10);
+        lv_obj_align(battery_label, LV_ALIGN_TOP_RIGHT, -7, i * 10);
 
-    snprintf(widget->text, sizeof(widget->text), "%c:--%%", side_label);
-    lv_label_set_text(widget->label, widget->text);
-    draw_battery(widget->canvas, 0U, false);
-    lv_obj_add_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(image_canvas, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(battery_label, LV_OBJ_FLAG_HIDDEN);
+
+        battery_objects[i] = (struct battery_object){
+            .symbol = image_canvas,
+            .label = battery_label,
+        };
+    }
 
     sys_slist_append(&widgets, &widget->node);
     widget_insight_battery_status_init();
     return 0;
 }
 
-void zmk_insight_display_widget_battery_status_update(
-    struct zmk_insight_display_widget_battery_status *widget, uint8_t battery, bool valid) {
-    ARG_UNUSED(widget);
-    ARG_UNUSED(battery);
-    ARG_UNUSED(valid);
+lv_obj_t *zmk_insight_display_widget_battery_status_obj(
+    struct zmk_insight_display_widget_battery_status *widget) {
+    return widget->obj;
 }
